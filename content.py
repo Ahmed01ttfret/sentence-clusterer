@@ -10,10 +10,11 @@ class SentenceClusterer:
     Clusters semantically similar sentences using Google's GenAI embeddings.
     """
 
-    def __init__(self, sentences, api_key=None):
+    def __init__(self, sentences, api_key=None,):
         self.sentences = sentences
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
         self.client = genai.Client(api_key=self.api_key)
+        
 
     def compute_embeddings(self):
         """
@@ -36,7 +37,7 @@ class SentenceClusterer:
         similarity_matrix = cosine_similarity(embeddings)
         return similarity_matrix
 
-    def group_similar_sentences(self, threshold=0.85):
+    def group_similar_sentences(self, threshold=0.7):
         """
         Group sentences that have cosine similarity >= threshold.
         """
@@ -50,7 +51,7 @@ class SentenceClusterer:
 
         return groups
 
-    def summarize_clusters(self):
+    def summarize_clusters(self,title=''):
         """
         Generate a short summary for each cluster using the Gemini model.
         """
@@ -59,8 +60,18 @@ class SentenceClusterer:
         for cluster in self.group_similar_sentences():
             summary = self.client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=f"In just a short sentence, summarize what the following sentences are about: {cluster}"
+                contents = f"""
+You are analyzing responses to the survey question: "{title}"
+
+Here are several responses: {cluster}
+
+Write ONE short, clear summary sentence that captures the main shared idea among all these responses. 
+Avoid repeating phrases and focus on the central theme.
+"""
+
             )
             cluster_summary[summary.text] = len(cluster)
 
         return cluster_summary
+
+
